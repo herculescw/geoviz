@@ -3,7 +3,7 @@
 """Main module."""
 import numpy as np
 import pandas as pd
-import plotly.offeline as py
+import plotly.offline as py
 
 from enum import Enum
 
@@ -136,20 +136,24 @@ class CategoryPlot(BasePlot):
         self.lat_col_name = lat_col_name
         self.type = None
 
-    def set_data_point(self, val_col_name, text_col_name, type='scattergeo', size=10, opacity=0.8, coloarscale='Viridis'
+    def set_data_point(self, val_col_name, text_col_name='', type='scattergeo', size=10, opacity=0.8,
+                       colorscale='Viridis'
                        , locationmode=LocationMode.ISO3.value):
         """
         :param val_col_name:
         :param text_col_name:
         :param size:
         :param opacity:
-        :param coloarscale:
+        :param colorscale:
         """
         unique_val = self.df[val_col_name].unique()
         temp_df = pd.DataFrame({val_col_name: unique_val})
         temp_df['color'] = np.random.randn(temp_df.size)
         result = pd.merge(left=self.df, right=temp_df, on=val_col_name)
-        result['text'] = result[val_col_name] + ':' + result[text_col_name]
+        if len(text_col_name) == 0:
+            result['text'] = result[val_col_name]
+        else:
+            result['text'] = result[val_col_name] + ':' + result[text_col_name]
         self.type = type
         self.locationmode = locationmode
 
@@ -165,12 +169,12 @@ class CategoryPlot(BasePlot):
                 size=size,
                 opacity=opacity,
                 color=result['color'],
-                coloarscale=coloarscale
+                colorscale=colorscale
             )
         )
         self.data_point = [data_point]
 
-    def set_connection_path(self, df_paths, start_lon, start_lat, end_lon, end_lat):
+    def set_connection_path(self, df_paths, start_lon_name, start_lat_name, end_lon_name, end_lat_name):
         """
         :param df_paths:
         """
@@ -179,8 +183,8 @@ class CategoryPlot(BasePlot):
                 dict(
                     type=self.type,
                     locationmode=self.locationmode,
-                    lon=[df_paths[start_lon][i], df_paths[end_lon][i]],
-                    lat=[df_paths[start_lat][i], df_paths[end_lat][i]],
+                    lon=[df_paths[start_lon_name][i], df_paths[end_lon_name][i]],
+                    lat=[df_paths[start_lat_name][i], df_paths[end_lat_name][i]],
                     mode='lines',
                     line=dict(
                         width=1,
@@ -193,7 +197,6 @@ class CategoryPlot(BasePlot):
         """
         :param show_connection:
         :param in_notebook:
-        :return:
         """
         if show_connection & in_notebook:
             if len(self.connection_path) == 0:
@@ -201,7 +204,7 @@ class CategoryPlot(BasePlot):
             fig = dict(data=self.connection_path + self.data_point, layout=self.layout)
             py.iplot(fig)
         elif in_notebook:
-            fig = dict(self.data_point, layout=self.layout)
+            fig = dict(data=self.data_point, layout=self.layout)
             py.iplot(fig)
         else:
             raise NotImplemented
